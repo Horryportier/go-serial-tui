@@ -1,4 +1,4 @@
-module serial/tui
+module serial/goserial
 
 go 1.21.1
 
