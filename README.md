@@ -11,5 +11,7 @@ cd go-serial-tui \
 go install -o goserial
 ```
 
-### Usage: 
+### Usage:
+```
 Usage: goserial <port> <baud_rate>
+```
