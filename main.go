@@ -11,6 +11,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/wordwrap"
+	"github.com/muesli/reflow/wrap"
 	"github.com/tarm/serial"
 )
 
@@ -19,6 +21,8 @@ type appState int
 const (
 	INPUT appState = iota
 	NONE
+
+	maxWidth = 40
 )
 
 var (
@@ -33,8 +37,6 @@ var (
 	docStyle    = lipgloss.NewStyle().Margin(1, 2)
 )
 
-
-
 type PortInfo struct {
 	name      string
 	baut_rate int
@@ -46,8 +48,9 @@ type model struct {
 	port_info     PortInfo
 	textInput     textinput.Model
 	serial_output []string
-	display_text string
-	width int
+	display_text  string
+	width         int
+	height        int
 }
 
 func initialModel(port_name string, baud_rate int) model {
@@ -141,27 +144,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			var v = m.textInput.Value()
 			if v != "" {
-
 				stdin <- v
 				m.textInput.SetValue("")
 			}
 		}
 	case tea.WindowSizeMsg:
-			m.width = msg.Width
-			return m, tea.ClearScreen
+		m.width = msg.Width
+		m.height = msg.Height
+		cmds = append(cmds, tea.ClearScreen)
 	}
 
 	// updates data
 	select {
 	case data := <-stdout:
 		m.serial_output = append(m.serial_output, data)
-		m.display_text +=  data
+		m.display_text += data
 		cmds = append(cmds, tea.ClearScreen)
 	default:
+
 	}
 	if m.state == INPUT {
 		m.textInput, cmd = m.textInput.Update(msg)
 		cmds = append(cmds, cmd)
+
 	}
 	cmds = append(cmds, cmd)
 
@@ -175,7 +180,9 @@ func port_info(m *model) string {
 }
 
 func (m model) View() string {
-		return fmt.Sprintf("%s\n%s\n%s", stdoutStyle.Render(m.display_text) , port_info(&m),
+	return fmt.Sprintf("%s\n%s\n%s",
+		wrap.String(wordwrap.String(stdoutStyle.Render(m.display_text), min(m.width, maxWidth)), maxWidth),
+		port_info(&m),
 		m.textInput.View())
 }
 
