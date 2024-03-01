@@ -2,18 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/wordwrap"
+	"github.com/tarm/serial"
 	"io"
 	"log"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/reflow/wordwrap"
-	"github.com/muesli/reflow/wrap"
-	"github.com/tarm/serial"
 )
 
 type appState int
@@ -143,6 +141,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			var v = m.textInput.Value()
+			if v == "exit" || v == "quit" {
+				return m, tea.Quit
+			}
 			if v != "" {
 				stdin <- v
 				m.textInput.SetValue("")
@@ -180,10 +181,10 @@ func port_info(m *model) string {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf("%s\n%s\n%s",
-		wrap.String(wordwrap.String(stdoutStyle.Render(m.display_text), min(m.width, maxWidth)), maxWidth),
+	return wordwrap.String(fmt.Sprintf("%s\n%s\n%s",
+		stdoutStyle.Render(m.display_text),
 		port_info(&m),
-		m.textInput.View())
+		m.textInput.View()), min(m.width, maxWidth))
 }
 
 func main() {
